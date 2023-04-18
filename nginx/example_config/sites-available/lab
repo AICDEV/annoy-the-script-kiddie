@@ -1,0 +1,40 @@
+limit_req_zone $binary_remote_addr zone=limitreqsbyaddr:20m rate=15r/s;
+limit_req_status 429;
+
+upstream app.localhost {
+	server localhost:8080;
+	server localhost:8081;
+}
+
+server {
+	listen 80;
+	server_name app.devlab.intern;
+
+	access_log /var/log/nginx/app.devlab.intern.http.access.log;
+	error_log /var/log/nginx/app.devlab.intern.http.error.log;
+	
+	return 301 https://$host$request_uri;
+}
+
+server {
+	listen 443 ssl;
+	server_name app.devlab.intern;
+
+	access_log /var/log/nginx/app.devlab.intern.tls.access.log sslparams;
+	error_log /var/log/nginx/app.devlab.intern.tls.error.log;
+
+	ssl_certificate /etc/nginx/certs/devlab_intern.crt;
+	ssl_certificate_key /etc/nginx/certs/devlab_intern.key;
+	
+	include /etc/nginx/snippets/tls_config.conf;
+
+	if ($request_method ~ ^(PATCH|TRACE)$) {
+        	return 405;
+        }
+
+	location / {
+		# have an request limit
+		limit_req zone=limitreqsbyaddr burst=10;
+		proxy_pass http://app.localhost;
+	}
+}
