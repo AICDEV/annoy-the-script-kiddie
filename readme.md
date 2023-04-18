@@ -12,4 +12,4 @@ Chech the ./firewall folder. Contains a config for netfilter bases on [iptables]
 
 ## nginx
 
-Check the ./nginx folder. Contains best-pratices for secure your nginx deployment
+Check the ./nginx folder. Contains best-pratices for secure your [nginx](https://www.nginx.com/) deployment
