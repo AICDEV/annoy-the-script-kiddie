@@ -45,6 +45,13 @@ Diffie-Hellman group: This is used for s.g. perfect forward secrecy [https://en.
 openssl dhparam -out /etc/nginx/dhparam.pem 4096
 ```
 
+### generate tls certificate
+Simple command to generate a self signed TLS certificate. Read more about at [let's encrypt](https://letsencrypt.org/docs/certificates-for-localhost/)
+
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout /etc/nginx/certs/self_signed.key -out /etc/nginx/certs/self_signed.crt
+```
+
 ### limit request zone
 Rate limiting can be used for security purposes, for example to slow down brute‑force password‑guessing attacks. Read more on nginx offical blog: [https://www.nginx.com/blog/rate-limiting-nginx/](https://www.nginx.com/blog/rate-limiting-nginx/)
 
