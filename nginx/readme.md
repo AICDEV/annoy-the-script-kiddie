@@ -8,15 +8,15 @@ A complete configuration example with reverse proxy, simple load balancing and s
 
 | nginx add header  |  description  |  read more |
 |---------|---------------|------------|
-| ```add_header Referrer-Policy same-origin; ``` | The Referrer-Policy HTTP header controls how much referrer information (sent with the Referer header) should be included with requests. | [Referrer-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) |
+| ```add_header Referrer-Policy same-origin;``` | The Referrer-Policy HTTP header controls how much referrer information (sent with the Referer header) should be included with requests. | [Referrer-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) |
 | ```add_header X-Frame-Options "DENY";``` | The X-Frame-Options HTTP response header can be used to indicate whether or not a browser should be allowed to render a page in a frame, iframe, embed or object. Sites can use this to avoid click-jacking attacks, by ensuring that their content is not embedded into other sites. | [X-Frame-Options](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options) |
 | ```add_header X-XSS-Protection "1;mode=block";``` | The HTTP X-XSS-Protection response header is a feature of Internet Explorer, Chrome and Safari that stops pages from loading when they detect reflected cross-site scripting (XSS) attacks. | [X-XSS-Protection](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection) |
 | ```add_header X-Content-Type-Options nosniff;``` | The X-Content-Type-Options response HTTP header is a marker used by the server to indicate that the MIME types advertised in the Content-Type headers should be followed and not be changed. The header allows you to avoid MIME type sniffing by saying that the MIME types are deliberately configured. | [X-Content-Type-Options](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options) |
 | ```add_header Strict-Transport-Security "max-age=31536000; includeSubdomains; preload";``` | The HTTP Strict-Transport-Security response header (often abbreviated as HSTS) informs browsers that the site should only be accessed using HTTPS, and that any future attempts to access it using HTTP should automatically be converted to HTTPS. | [Strict-Transport-Security](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security) |
 | ```add_header Content-Security-Policy default-src "self" always;``` | The HTTP Content-Security-Policy response header allows website administrators to control resources the user agent is allowed to load for a given page. With a few exceptions, policies mostly involve specifying server origins and script endpoints. This helps guard against cross-site scripting attacks (Cross-site_scripting). | [Content-Security-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy) |
-| ```add_header Feature-Policy "microphone 'none'; geolocation 'none'; camera 'none'" always; ``` | The HTTP Permissions-Policy header provides a mechanism to allow and deny the use of browser features in a document or within any iframe elements in the document. | [Permissions-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy) |
+| ```add_header Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()" always;``` | The HTTP Permissions-Policy header provides a mechanism to allow and deny the use of browser features in a document or within any iframe elements in the document. | [Permissions-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy) |
 
-### tls 
+### tls
 
 The TLS protocol is managed and developed by the IETF TLS Working Group. More information is available at: [https://tlswg.org/](https://tlswg.org/)
 
@@ -46,6 +46,7 @@ openssl dhparam -out /etc/nginx/dhparam.pem 4096
 ```
 
 ### generate tls certificate
+
 Simple command to generate a self signed TLS certificate. Read more about at [let's encrypt](https://letsencrypt.org/docs/certificates-for-localhost/)
 
 ```bash
@@ -53,6 +54,7 @@ openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout /etc/nginx/certs/sel
 ```
 
 ### limit request zone
+
 Rate limiting can be used for security purposes, for example to slow down brute‑force password‑guessing attacks. Read more on nginx offical blog: [https://www.nginx.com/blog/rate-limiting-nginx/](https://www.nginx.com/blog/rate-limiting-nginx/)
 
 ```
