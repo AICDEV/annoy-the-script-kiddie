@@ -7,7 +7,7 @@ Here you can find a collection of useful scripts and articles to make the life o
 
 ## firewall
 
-Chech the ./firewall folder. Contains a config for netfilter bases on [iptables](https://en.wikipedia.org/wiki/Iptables)
+Check the ./firewall folder. Contains a config for netfilter bases on [iptables](https://en.wikipedia.org/wiki/Iptables)
 
 
 ## nginx
