@@ -15,6 +15,12 @@ A complete configuration example with reverse proxy, simple load balancing and s
 | ```add_header Strict-Transport-Security "max-age=31536000; includeSubdomains; preload";``` | The HTTP Strict-Transport-Security response header (often abbreviated as HSTS) informs browsers that the site should only be accessed using HTTPS, and that any future attempts to access it using HTTP should automatically be converted to HTTPS. | [Strict-Transport-Security](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security) |
 | ```add_header Content-Security-Policy default-src "self" always;``` | The HTTP Content-Security-Policy response header allows website administrators to control resources the user agent is allowed to load for a given page. With a few exceptions, policies mostly involve specifying server origins and script endpoints. This helps guard against cross-site scripting attacks (Cross-site_scripting). | [Content-Security-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy) |
 | ```add_header Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()" always;``` | The HTTP Permissions-Policy header provides a mechanism to allow and deny the use of browser features in a document or within any iframe elements in the document. | [Permissions-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy) |
+| ```add_header Access-Control-Allow-Origin "https://my.page";``` | Cross-Origin Resource Sharing (CORS) is an HTTP-header based mechanism that allows a server to indicate any origins (domain, scheme, or port) other than its own from which a browser should permit loading resources.| [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) |
+| ```add_header Cross-Origin-Resource-Policy "same-origin";``` |Cross-Origin Resource Policy is a policy set by the Cross-Origin-Resource-Policy HTTP header that lets web sites and applications opt in to protection against certain requests from other origins (such as those issued with elements like script and img), to mitigate speculative side-channel attacks, like Spectre, as well as Cross-Site Script Inclusion attacks.| [CORP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cross-Origin_Resource_Policy) |
+| ```add_header Cross-Origin-Embedder-Policy "require-corp";``` | The HTTP Cross-Origin-Embedder-Policy (COEP) response header configures embedding cross-origin resources into the document. | [COEP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy) |
+| ```add_header Cross-Origin-Opener-Policy "same-origin";``` | The HTTP Cross-Origin-Opener-Policy (COOP) response header allows you to ensure a top-level document does not share a browsing context group with cross-origin documents. | [COOP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy) |
+
+
 
 ### tls
 
@@ -75,4 +81,28 @@ server {
 		proxy_pass http://app.localhost;
 	}
 }
+```
+
+### COOP, COEP, CORP, CORS
+
+A very good introduction and explanation about this topic can be found in the following ressources:
+
+- [https://snigel.com/blog/a-simple-guide-to-coop-coep-corp-and-cors](https://snigel.com/blog/a-simple-guide-to-coop-coep-corp-and-cors)
+- [https://web.dev/coop-coep/](https://web.dev/coop-coep/)
+- [https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS)
+
+
+```
+# CORS HEADER
+add_header Access-Control-Allow-Origin "https://my.page";
+
+# CORP HEADER
+add_header Cross-Origin-Resource-Policy "same-origin";
+
+# COEP HEADER
+add_header Cross-Origin-Embedder-Policy "require-corp";
+
+# COOP HEADER
+add_header Cross-Origin-Opener-Policy "same-origin";
+
 ```
