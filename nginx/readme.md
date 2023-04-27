@@ -1,5 +1,14 @@
 # annoy-the-script-kiddie
 
+## overview
+- [nginx](#nginx)
+- [headers](#headers)
+- [tls](#tls)
+- [headers](#headers)
+- [limit request zone](#limit-request-zone)
+- [COOP COEP CORP CORS](#coop-coep-corp-cors)
+- [restrict access to specific http methods](#restrict-access-to-specific-http-methods)
+
 ## nginx
 
 A complete configuration example with reverse proxy, simple load balancing and secure config is available inside the *./example_config* folder.
@@ -83,7 +92,7 @@ server {
 }
 ```
 
-### COOP, COEP, CORP, CORS
+### COOP COEP CORP CORS
 
 A very good introduction and explanation about this topic can be found in the following ressources:
 
@@ -104,5 +113,17 @@ add_header Cross-Origin-Embedder-Policy "require-corp";
 
 # COOP HEADER
 add_header Cross-Origin-Opener-Policy "same-origin";
+```
+
+### restrict access to specific http methods
+
+Sometimes it can be helpful to allow only one HTTP method.
+
+[https://nginx.org/en/docs/http/ngx_http_core_module.html#limit_except](https://nginx.org/en/docs/http/ngx_http_core_module.html#limit_except)
 
 ```
+# HEAD is implicit
+limit_except GET { 
+	deny  all;
+}
+ ```
