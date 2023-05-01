@@ -1,5 +1,16 @@
 # annoy-the-script-kiddie
 
+## overview
+- [information](#information)
+- [firewall](#firewall)
+
+## information
+
+Don't forget that iptables is only working with IPV4. In order to work with IPV6, please use ip6tables. Same syntax.
+
+- [iptabes-man](https://linux.die.net/man/8/iptables)
+- [ip6tables-man](https://linux.die.net/man/8/ip6tables)
+
 ## firewall
 
 If you would like to trick bots and kids that scan and bruteforce your server, check the *iptables_ssh_and_portscan.sh* script

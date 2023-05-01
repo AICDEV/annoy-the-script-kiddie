@@ -4,7 +4,6 @@
 - [nginx](#nginx)
 - [headers](#headers)
 - [tls](#tls)
-- [headers](#headers)
 - [limit request zone](#limit-request-zone)
 - [COOP COEP CORP CORS](#coop-coep-corp-cors)
 - [restrict access to specific http methods](#restrict-access-to-specific-http-methods)
