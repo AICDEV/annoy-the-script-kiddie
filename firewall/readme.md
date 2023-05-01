@@ -1,9 +1,15 @@
 # annoy-the-script-kiddie
 
 ## overview
+- [tutorial](#youtube-tutotial)
 - [information](#information)
 - [firewall](#firewall)
-- [youtube-tutorial](#https://www.youtube.com/watch?v=i9o91Uvnz0c)
+
+## youtube tutotial
+
+A tutorial video can be found here:
+
+- [https://www.youtube.com/watch?v=i9o91Uvnz0c](https://www.youtube.com/watch?v=i9o91Uvnz0c)
 
 ## information
 
