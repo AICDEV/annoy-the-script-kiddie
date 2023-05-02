@@ -3,6 +3,7 @@
 ## overview
 - [tutorial](#youtube-tutotial)
 - [information](#information)
+- [save and load firewall config](#save-and-load-firewall-config)
 - [firewall](#firewall)
 
 ## youtube tutotial
@@ -18,9 +19,25 @@ Don't forget that iptables is only working with IPV4. In order to work with IPV6
 - [iptabes-man](https://linux.die.net/man/8/iptables)
 - [ip6tables-man](https://linux.die.net/man/8/ip6tables)
 
+## save and load firewall config
+
+### save
+
 By default iptables rule are not being saved. If you restart your server, you need to reconfigure iptables. You can simply omit this behaviour by installing the iptables-persistant package. Simply run the following command to install:
 ```bash
 sudo apt install iptables-persistent
+```
+
+You can export your rules to a file by simply running the following command:
+```bash
+iptables-save > /etc/iptables/rules.v4
+```
+
+### load
+
+In order to load/restore you saved configuration, simply run the following command:
+```bash
+iptables-restore < /etc/iptables/rules.v4
 ```
 
 ## firewall
