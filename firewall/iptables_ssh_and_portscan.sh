@@ -31,7 +31,7 @@ PORTSCAN_BANN_TIME=360
 
 # prefix inside the iptables log
 # for journalctl you can run the following:
-# journalctl -k -f- g IPTABLES_BLOCK_
+# journalctl -k -f -g IPTABLES_BLOCK_
 BLOCK_CHAIN_LOG_PREFIX="IPTABLES_BLOCK_"
 
 create_chains()

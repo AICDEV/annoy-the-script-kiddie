@@ -40,6 +40,18 @@ In order to load/restore you saved configuration, simply run the following comma
 iptables-restore < /etc/iptables/rules.v4
 ```
 
+### block ip
+If someone starts getting on your nerves and apears again, again and again in your log file you could think about increase the default bann-time or drop the ip forever. In order to block an ip-address simply run the following command:
+```bash
+iptables -I INPUT -s 43.153.88.134 -j DROP
+```
+
+You could also block an entire ip range by using CIDR notation. The following example gonnag block ip-adresses starting from 43.153.88.0 to 43.153.88.255
+
+```bash
+iptables -I INPUT -s 43.153.88.0/24 -j DROP
+```
+
 ## firewall
 
 If you would like to trick bots and kids that scan and bruteforce your server, check the *iptables_ssh_and_portscan.sh* script
@@ -78,7 +90,7 @@ PORTSCAN_BANN_TIME=360
 
 # prefix inside the iptables log
 # for journalctl you can run the following:
-# journalctl -k -f- g IPTABLES_BLOCK_
+# journalctl -k -f -g IPTABLES_BLOCK_
 BLOCK_CHAIN_LOG_PREFIX="IPTABLES_BLOCK_"
 
 create_chains()
