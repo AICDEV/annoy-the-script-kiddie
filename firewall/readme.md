@@ -18,6 +18,11 @@ Don't forget that iptables is only working with IPV4. In order to work with IPV6
 - [iptabes-man](https://linux.die.net/man/8/iptables)
 - [ip6tables-man](https://linux.die.net/man/8/ip6tables)
 
+By default iptables rule are not being saved. If you restart your server, you need to reconfigure iptables. You can simply omit this behaviour by installing the iptables-persistant package. Simply run the following command to install:
+```bash
+sudo apt install iptables-persistent
+```
+
 ## firewall
 
 If you would like to trick bots and kids that scan and bruteforce your server, check the *iptables_ssh_and_portscan.sh* script
@@ -69,8 +74,8 @@ apply_rules()
 {
   echo "add rules"
   echo "add log "
-  sudo iptables -I BLOCK -j LOG --log-prefix="${BLOCK_CHAIN_LOG_PREFIX}" --log-level 7
-  sudo iptables -A BLOCK -j DROP
+  iptables -I BLOCK -j LOG --log-prefix="${BLOCK_CHAIN_LOG_PREFIX}" --log-level 7
+  iptables -A BLOCK -j DROP
 
   # DROP INVALID PACKETS
   echo "add rule to drop invalid packets"

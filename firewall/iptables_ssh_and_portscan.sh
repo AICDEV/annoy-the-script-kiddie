@@ -44,8 +44,8 @@ apply_rules()
 {
   echo "add rules"
   echo "add log "
-  sudo iptables -I BLOCK -j LOG --log-prefix="${BLOCK_CHAIN_LOG_PREFIX}" --log-level 7
-  sudo iptables -A BLOCK -j DROP
+  iptables -I BLOCK -j LOG --log-prefix="${BLOCK_CHAIN_LOG_PREFIX}" --log-level 7
+  iptables -A BLOCK -j DROP
 
   # DROP INVALID PACKETS
   echo "add rule to drop invalid packets"
