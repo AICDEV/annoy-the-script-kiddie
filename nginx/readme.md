@@ -7,6 +7,7 @@
 - [limit request zone](#limit-request-zone)
 - [COOP COEP CORP CORS](#coop-coep-corp-cors)
 - [restrict access to specific http methods](#restrict-access-to-specific-http-methods)
+- [simple-bot-protection](#simple-bot-protection)
 
 ## nginx
 
@@ -126,3 +127,32 @@ limit_except GET {
 	deny  all;
 }
  ```
+
+ #### simple bot protection
+
+ If bots or other stupid scanners, mostly in your default configuration, send along a "talking" user-agent, we can cause maximum confusion with an internal Nginx HTTP status. To do this, we create a file named "cat bot.protection.conf" in the /etc/nginx/snippets folder and add the following content:
+
+ ```
+ map $http_user_agent $blacklist_user_agents {
+    ~*wpscan            1;
+    ~*dirbuster         1;
+    ~*gobuster          1;
+ }
+ ```
+
+ Within the virtual host configuration, the file can be loaded with the following directive:
+
+```
+include /etc/nginx/snippets/bot.protection.conf;
+```
+
+After that you can test the variable value of $blacklist_user_agents inside the "server" block with the following statement:
+
+```
+if ($blacklist_user_agents) {
+	return 444;
+}
+
+What is HTTP 444?
+
+A non-standard status code that instructs the NGINX web server to close the connection without sending a response header to the client. Most commonly, this code is used to deny malicious or misformatted requests.

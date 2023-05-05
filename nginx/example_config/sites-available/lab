@@ -1,6 +1,8 @@
 limit_req_zone $binary_remote_addr zone=limitreqsbyaddr:20m rate=15r/s;
 limit_req_status 429;
 
+include /etc/nginx/snippets/bot.protection.conf;
+
 upstream app.localhost {
 	server localhost:8080;
 	server localhost:8081;
@@ -28,9 +30,13 @@ server {
 	
 	include /etc/nginx/snippets/tls_config.conf;
 
+    if ($blacklist_user_agents) {
+        return 444;
+    }
+
 	if ($request_method ~ ^(PATCH|TRACE)$) {
         	return 405;
-        }
+    }
 
 	location / {
 		# have an request limit
