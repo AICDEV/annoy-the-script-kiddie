@@ -130,7 +130,7 @@ limit_except GET {
 
  #### simple bot protection
 
- If bots or other stupid scanners, mostly in your default configuration, send along a "talking" user-agent, we can cause maximum confusion with an internal Nginx HTTP status. To do this, we create a file named "cat bot.protection.conf" in the /etc/nginx/snippets folder and add the following content:
+ If bots or other stupid scanners, mostly in your default configuration, send along a "talking" user-agent, we can cause maximum confusion with an internal Nginx HTTP status. To do this, we create a file named "bot.protection.conf" in the /etc/nginx/snippets folder and add the following content:
 
  ```
  map $http_user_agent $blacklist_user_agents {
