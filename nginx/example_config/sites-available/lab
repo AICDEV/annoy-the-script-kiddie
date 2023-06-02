@@ -22,6 +22,8 @@ server {
 	listen 443 ssl;
 	server_name app.devlab.intern;
 
+	include /etc/nginx/snippets/generic.protection.conf;
+
 	access_log /var/log/nginx/app.devlab.intern.tls.access.log sslparams;
 	error_log /var/log/nginx/app.devlab.intern.tls.error.log;
 

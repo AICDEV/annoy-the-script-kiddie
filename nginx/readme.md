@@ -8,6 +8,7 @@
 - [COOP COEP CORP CORS](#coop-coep-corp-cors)
 - [restrict access to specific http methods](#restrict-access-to-specific-http-methods)
 - [simple-bot-protection](#simple-bot-protection)
+- [generic-protection](#generic-protection)
 
 ## nginx
 
@@ -153,6 +154,34 @@ if ($blacklist_user_agents) {
 	return 444;
 }
 
+```
+
 What is HTTP 444?
 
 A non-standard status code that instructs the NGINX web server to close the connection without sending a response header to the client. Most commonly, this code is used to deny malicious or misformatted requests.
+
+#### generic protection
+
+Sometimes things just go wrong. Therefore include and update the file "generic.protection.conf" to your needs!
+
+```
+include /etc/nginx/snippets/bot.protection.conf;
+```
+
+Preconfigured content:
+
+
+```
+# Some example settings for various things that can quickly go wrong
+# CONTEXT: SERVER
+
+# <your-domain>/.bash_history for example ends with HTTP 444. 
+location ~ /\. {
+	return 444;
+}
+
+# unless you really need HTTP PATCH and TRACE. Most applications only need GET and POST
+if ($request_method ~ ^(PATCH|TRACE)$) {
+	return 405;
+}
+```
