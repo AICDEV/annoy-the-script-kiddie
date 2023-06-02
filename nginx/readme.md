@@ -165,7 +165,7 @@ A non-standard status code that instructs the NGINX web server to close the conn
 Sometimes things just go wrong. Therefore include and update the file "generic.protection.conf" to your needs!
 
 ```
-include /etc/nginx/snippets/bot.protection.conf;
+include /etc/nginx/snippets/generic.protection.conf;
 ```
 
 Preconfigured content:
