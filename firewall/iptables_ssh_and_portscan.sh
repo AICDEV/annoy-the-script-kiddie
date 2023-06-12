@@ -56,6 +56,10 @@ apply_rules()
   iptables -i $NETWORK_INTERFACE -A INPUT -p icmp -m icmp --icmp-type address-mask-request -j DROP
   iptables -i $NETWORK_INTERFACE -A INPUT -p icmp -m icmp --icmp-type timestamp-request -j DROP
 
+  # ALLOW OUTGOING TRAFFIC
+  echo "allow outgoing traffic"
+  iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
   # PROTECT SSH PORT
   echo "add rule to protect ssh port"
   iptables -i $NETWORK_INTERFACE -A INPUT -p tcp --dport $SSH_PORT -m state --state NEW -m recent --set --name SSH
@@ -77,10 +81,6 @@ apply_rules()
   # ALLOW TRAFFIC ON LOOPBACK INTERFACE
   echo "allow loopback traffic"
   iptables -I INPUT -i lo -j ACCEPT
-
-  # ALLOW OUTGOING TRAFFIC
-  echo "allow outgoing traffic"
-  iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
   # DROP THE REST
   echo "drop all the other traffic"
