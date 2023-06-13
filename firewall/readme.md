@@ -5,6 +5,7 @@
 - [information](#information)
 - [save and load firewall config](#save-and-load-firewall-config)
 - [firewall](#firewall)
+- [blacklist from log entries](#blacklist-from-log-entries)
 
 ## youtube tutotial
 
@@ -165,3 +166,13 @@ block_icmp_ping
 show_config
 
 ```
+
+## blacklist from log entries
+
+If you want to have a unique list of ip addresses from your iptables chain "BLOCK", simply run the following snippet:
+
+```bash
+journalctl -k -g IPTABLES_BLOCK_ | grep -E -o "SRC=([0-9]{1,3}[\.]){3}[0-9]{1,3}"| awk -F '=' '{print $2}' | sort | uniq -c | sort -nr
+```
+
+You can check the ip address on https://www.abuseipdb.com/ 

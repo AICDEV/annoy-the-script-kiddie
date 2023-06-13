@@ -66,7 +66,7 @@ apply_rules()
   iptables -i $NETWORK_INTERFACE -A INPUT -p tcp --dport $SSH_PORT -m state --state NEW -m recent --update --seconds $SSH_BANN_TIME --hitcount 3 --name SSH --rsource -j BLOCK
 
   # RESTRICT POSSIBLE NOISY PORTSCANS
-  echo "add rule to annoy to port-scanner"
+  echo "add rule to annoy the port-scanner"
   iptables -i $NETWORK_INTERFACE -A INPUT -p tcp -m tcp -m multiport ! --dports $SSH_PORT,$WEB_HTTP,$WEB_TLS -m recent --name PORTSCAN --set
   iptables -i $NETWORK_INTERFACE -A INPUT -m recent --name PORTSCAN --rcheck --seconds $PORTSCAN_BANN_TIME -j BLOCK
 
