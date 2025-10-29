@@ -58,113 +58,307 @@ iptables -I INPUT -s 43.153.88.0/24 -j DROP
 If you would like to trick bots and kids that scan and bruteforce your server, check the *iptables_ssh_and_portscan.sh* script
 
 ```bash
-#/bin/bash
-# AUTHOR: aicdev
-# LINK:   https://securityvalley.org
-# REPO:   github.com/aicdev/annoy-the-script-kiddie
-# ABOUT:  simple linux netfilter rules to annoy some bots and script-kiddies in the wild. rules are gonna set with iptables
-# you can install iptables by running: apt install iptables
-# IMPORTANT: if you restart your machine, all iptable rules are gone. to save them you can install iptables-persistent, simply run:
-# apt install iptables-persistent
+#!/bin/bash
+# AUTHOR: aicdev (fivesec)
 
-echo -e "\n\nCONFIGURE IPTABLES TO ANNOY THE SCRIPT-KIDDIE\n\n"
+set -e 
 
-# PLEASE CHANGE THIS TO THE NETWORK INTERFACE YOU WANNA PROTECT
-# netstat -tupln
-# ip a s
+
+# ==================== CONFIGURATION ====================
 NETWORK_INTERFACE=eth0
-
-# sometimes a good idea to move the default ssh port
-# just edit /etc/ssh/sshd_config and change port from 22 to f.g. 22223
-# most of the scan bots gonna fail
 SSH_PORT=22
-
-# if we detect ssh bruteforce attempt, we block all further traffic for 3 min
 SSH_BANN_TIME=180
-
-# custom for my web server (nginx) deployment
+SSH_MAX_ATTEMPTS=3
 WEB_HTTP=80
 WEB_TLS=443
-
-# if we detect a possible scan, we block all further traffic for 6 min
 PORTSCAN_BANN_TIME=360
-
-# prefix inside the iptables log
-# for journalctl you can run the following:
-# journalctl -k -f -g IPTABLES_BLOCK_
 BLOCK_CHAIN_LOG_PREFIX="IPTABLES_BLOCK_"
 
-create_chains()
-{
-  echo "create BLOCK chain"
-  iptables -N BLOCK
+WEB_RATE_LIMIT="10/second"
+WEB_BURST_LIMIT=20
+
+# ==================== HELPER FUNCTIONS ====================
+log_step() {
+    echo "→ $1"
 }
 
-apply_rules()
-{
-  echo "add rules"
-  echo "add log "
-  iptables -I BLOCK -j LOG --log-prefix="${BLOCK_CHAIN_LOG_PREFIX}" --log-level 7
-  iptables -A BLOCK -j DROP
-
-  # DROP INVALID PACKETS
-  echo "add rule to drop invalid packets"
-  iptables -i $NETWORK_INTERFACE -I INPUT -m state --state INVALID -j DROP
-
-  # DROP ICMP SMURF ATTACK (https://en.wikipedia.org/wiki/Smurf_attack)
-  echo "add rule to drop ICMP SMURF ATTACKS"
-  iptables -i $NETWORK_INTERFACE -A INPUT -p icmp -m icmp --icmp-type address-mask-request -j DROP
-  iptables -i $NETWORK_INTERFACE -A INPUT -p icmp -m icmp --icmp-type timestamp-request -j DROP
-
-  # PROTECT SSH PORT
-  echo "add rule to protect ssh port"
-  iptables -i $NETWORK_INTERFACE -A INPUT -p tcp --dport $SSH_PORT -m state --state NEW -m recent --set --name SSH
-  iptables -i $NETWORK_INTERFACE -A INPUT -p tcp --dport $SSH_PORT -m state --state NEW -m recent --update --seconds $SSH_BANN_TIME --hitcount 3 --name SSH --rsource -j BLOCK
-
-  # RESTRICT POSSIBLE NOISY PORTSCANS
-  echo "add rule to annoy to port-scanner"
-  iptables -i $NETWORK_INTERFACE -A INPUT -p tcp -m tcp -m multiport ! --dports $SSH_PORT,$WEB_HTTP,$WEB_TLS -m recent --name PORTSCAN --set
-  iptables -i $NETWORK_INTERFACE -A INPUT -m recent --name PORTSCAN --rcheck --seconds $PORTSCAN_BANN_TIME -j BLOCK
-
-  # ALLOW SSH ACCESS
-  echo "allow ssh access"
-  iptables -i $NETWORK_INTERFACE -A INPUT -p tcp --dport $SSH_PORT -j ACCEPT
-
-  # ALLOW WEBSERVER ACCESS
-  echo "allow webserver access"
-  iptables -i $NETWORK_INTERFACE -A INPUT -p tcp -m multiport --dports $WEB_HTTP,$WEB_TLS -j ACCEPT
-
-  # ALLOW TRAFFIC ON LOOPBACK INTERFACE
-  echo "allow loopback traffic"
-  iptables -I INPUT -i lo -j ACCEPT
-
-  # ALLOW OUTGOING TRAFFIC
-  echo "allow outgoing traffic"
-  iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-
-  # DROP THE REST
-  echo "drop all the other traffic"
-  iptables -A INPUT -j DROP
+chain_exists() {
+    iptables -L "$1" -n &>/dev/null
 }
 
-block_icmp_ping()
-{
-  iptables -i $NETWORK_INTERFACE -I INPUT -p icmp -m icmp --icmp-type 8 -j DROP
+rule_exists() {
+    iptables -C "$@" &>/dev/null 2>&1
 }
 
-show_config()
-{
-  iptables -L -v --line-numbers
+# ==================== CREATE CUSTOM CHAINS ====================
+create_chains() {
+    log_step "Creating custom chains (if not exist)"
+    
+    if ! chain_exists BLOCK; then
+        iptables -N BLOCK
+        echo "created BLOCK chain"
+    else
+        echo "BLOCK chain already exists"
+    fi
+    
+    if ! chain_exists LOG_DROP; then
+        iptables -N LOG_DROP
+        echo "created LOG_DROP chain"
+    else
+        echo "LOG_DROP chain already exists"
+    fi
 }
 
-create_chains
-apply_rules
+# ==================== CONFIGURE CHAINS ====================
+configure_chains() {
+    log_step "configuring custom chains"
+    
+    # BLOCK chain - logs and drops
+    if ! rule_exists BLOCK -j LOG --log-prefix="${BLOCK_CHAIN_LOG_PREFIX}" --log-level 7; then
+        iptables -A BLOCK -j LOG --log-prefix="${BLOCK_CHAIN_LOG_PREFIX}" --log-level 7
+    fi
+    if ! rule_exists BLOCK -j DROP; then
+        iptables -A BLOCK -j DROP
+    fi
+    
+    # LOG_DROP chain - logs and drops
+    if ! rule_exists LOG_DROP -j LOG --log-prefix="IPTABLES_DROP_" --log-level 7; then
+        iptables -A LOG_DROP -j LOG --log-prefix="IPTABLES_DROP_" --log-level 7
+    fi
+    if ! rule_exists LOG_DROP -j DROP; then
+        iptables -A LOG_DROP -j DROP
+    fi
+}
 
-# just comment that line if you wanna allow icmp ping packets
-block_icmp_ping
+# ==================== APPLY CORE RULES ====================
+apply_core_rules() {
+    log_step "allowing loopback traffic"
+    if ! rule_exists INPUT -i lo -j ACCEPT; then
+        iptables -A INPUT -i lo -j ACCEPT
+    fi
+    if ! rule_exists OUTPUT -o lo -j ACCEPT; then
+        iptables -A OUTPUT -o lo -j ACCEPT
+    fi
+    
+    log_step "allowing established and related connections"
+    if ! rule_exists INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT; then
+        iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    fi
+    
+    log_step "dropping invalid packets"
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -m conntrack --ctstate INVALID -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -m conntrack --ctstate INVALID -j DROP
+    fi
+}
 
-show_config
+# ==================== ANTI-SPOOFING ====================
+apply_antispoofing() {
+    log_step "applying anti-spoofing rules"
+    
+     # Drop packets with impossible source addresses
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -s 127.0.0.0/8 -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -s 127.0.0.0/8 -j DROP
+    fi
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -s 0.0.0.0/8 -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -s 0.0.0.0/8 -j DROP
+    fi
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -s 169.254.0.0/16 -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -s 169.254.0.0/16 -j DROP
+    fi
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -s 224.0.0.0/4 -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -s 224.0.0.0/4 -j DROP
+    fi
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -s 240.0.0.0/5 -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -s 240.0.0.0/5 -j DROP
+    fi
+}
 
+# ==================== ICMP RULES ====================
+apply_icmp_rules() {
+    log_step "configuring ICMP rules"
+    
+    # Allow ping replies (type 0)
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type 0 -j ACCEPT; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type 0 -j ACCEPT
+    fi
+    
+    # Allow destination unreachable (type 3)
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type 3 -j ACCEPT; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type 3 -j ACCEPT
+    fi
+    
+    # Allow time exceeded (type 11)
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type 11 -j ACCEPT; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type 11 -j ACCEPT
+    fi
+    
+    # Rate-limit ping requests (type 8)
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type 8 -m limit --limit 1/second --limit-burst 2 -j ACCEPT; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type 8 -m limit --limit 1/second --limit-burst 2 -j ACCEPT
+    fi
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type 8 -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type 8 -j DROP
+    fi
+    
+    # Drop ICMP attacks
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type address-mask-request -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type address-mask-request -j DROP
+    fi
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type timestamp-request -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type timestamp-request -j DROP
+    fi
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type router-solicitation -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p icmp --icmp-type router-solicitation -j DROP
+    fi
+}
+
+# ==================== SSH PROTECTION ====================
+apply_ssh_protection() {
+    log_step "applying SSH brute-force protection"
+    
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --set --name SSH; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --set --name SSH
+    fi
+    
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --update --seconds $SSH_BANN_TIME --hitcount $SSH_MAX_ATTEMPTS --name SSH --rsource -j BLOCK; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -m recent --update --seconds $SSH_BANN_TIME --hitcount $SSH_MAX_ATTEMPTS --name SSH --rsource -j BLOCK
+    fi
+    
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -j ACCEPT; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --dport $SSH_PORT -m conntrack --ctstate NEW -j ACCEPT
+    fi
+}
+
+# ==================== WEB SERVER PROTECTION ====================
+apply_web_protection() {
+    log_step "applying web server protection with rate limiting"
+    
+    # HTTP rate limiting
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --dport $WEB_HTTP -m conntrack --ctstate NEW -m limit --limit $WEB_RATE_LIMIT --limit-burst $WEB_BURST_LIMIT -j ACCEPT; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --dport $WEB_HTTP -m conntrack --ctstate NEW -m limit --limit $WEB_RATE_LIMIT --limit-burst $WEB_BURST_LIMIT -j ACCEPT
+    fi
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --dport $WEB_HTTP -m conntrack --ctstate NEW -j LOG_DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --dport $WEB_HTTP -m conntrack --ctstate NEW -j LOG_DROP
+    fi
+    
+    # HTTPS rate limiting
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --dport $WEB_TLS -m conntrack --ctstate NEW -m limit --limit $WEB_RATE_LIMIT --limit-burst $WEB_BURST_LIMIT -j ACCEPT; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --dport $WEB_TLS -m conntrack --ctstate NEW -m limit --limit $WEB_RATE_LIMIT --limit-burst $WEB_BURST_LIMIT -j ACCEPT
+    fi
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --dport $WEB_TLS -m conntrack --ctstate NEW -j LOG_DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --dport $WEB_TLS -m conntrack --ctstate NEW -j LOG_DROP
+    fi
+}
+
+# ==================== PORT SCAN DETECTION ====================
+apply_portscan_detection() {
+    log_step "applying port scan detection"
+    
+    # Detect port scanning (connections to closed ports)
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp -m multiport ! --dports $SSH_PORT,$WEB_HTTP,$WEB_TLS -m recent --name PORTSCAN --set -j LOG_DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp -m multiport ! --dports $SSH_PORT,$WEB_HTTP,$WEB_TLS -m recent --name PORTSCAN --set -j LOG_DROP
+    fi
+    
+    # Block further traffic from port scanners
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -m recent --name PORTSCAN --rcheck --seconds $PORTSCAN_BANN_TIME -j BLOCK; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -m recent --name PORTSCAN --rcheck --seconds $PORTSCAN_BANN_TIME -j BLOCK
+    fi
+}
+
+# ==================== SYN FLOOD PROTECTION ====================
+apply_synflood_protection() {
+    log_step "applying SYN flood protection"
+    
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --syn -m limit --limit 1/second --limit-burst 3 -j ACCEPT; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --syn -m limit --limit 1/second --limit-burst 3 -j ACCEPT
+    fi
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --syn -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --syn -j DROP
+    fi
+}
+
+# ==================== DROP COMMON ATTACKS ====================
+apply_attack_protection() {
+    log_step "applying protection against common attacks"
+    
+    # Drop NULL packets
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --tcp-flags ALL NONE -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --tcp-flags ALL NONE -j DROP
+    fi
+    
+    # Drop XMAS packets
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --tcp-flags ALL ALL -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --tcp-flags ALL ALL -j DROP
+    fi
+    
+    # Drop packets with FIN flag without ACK
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --tcp-flags FIN,ACK FIN -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --tcp-flags FIN,ACK FIN -j DROP
+    fi
+    
+    # Drop packets with SYN and FIN set
+    if ! rule_exists INPUT -i $NETWORK_INTERFACE -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP; then
+        iptables -A INPUT -i $NETWORK_INTERFACE -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+    fi
+}
+
+# ==================== SHOW CONFIGURATION ====================
+show_config() {
+    echo -e "\n current iptables configuration:\n"
+    iptables -L -v -n --line-numbers
+    
+    echo -e "\n custom chains:\n"
+    if chain_exists BLOCK; then
+        iptables -L BLOCK -v -n
+    fi
+    if chain_exists LOG_DROP; then
+        iptables -L LOG_DROP -v -n
+    fi
+}
+
+# ==================== SAVE RULES ====================
+save_rules() {
+    log_step "saving rules"
+    
+    if command -v iptables-save &> /dev/null; then
+        mkdir -p /etc/iptables
+        iptables-save > /etc/iptables/rules.v4
+        echo "rules saved to /etc/iptables/rules.v4"
+    else
+        echo "iptables-persistent not installed. Rules will be lost on reboot."
+        echo "you may want to install with: apt install iptables-persistent"
+    fi
+}
+
+# ==================== MAIN  ====================
+main() {
+    if [[ $EUID -ne 0 ]]; then
+        echo "this script must be run as root"
+        exit 1
+    fi
+    
+    echo "existing rules will be preserved"
+    echo "only missing rules will be added"
+    echo ""
+    
+    create_chains
+    configure_chains
+    apply_core_rules
+    apply_antispoofing
+    apply_icmp_rules
+    apply_synflood_protection
+    apply_attack_protection
+    apply_ssh_protection
+    apply_web_protection
+    apply_portscan_detection
+    
+    show_config
+    save_rules
+    
+    echo -e "\n firewall configuration complete! \n"
+}
+
+main
 ```
 
 ## blacklist from log entries
